@@ -1,6 +1,8 @@
 import React, {useReducer} from 'react';
+import axios from 'axios'
 import AuthContext from '../auth/authContext';
-import authReducer from '../auth/authReducer'
+import authReducer from '../auth/authReducer';
+import setAuthToken from '../../../src/utils/setAuthToken'
 import {
   REGISTER_SUCCESS,
   REGISTER_FAIL,
@@ -26,14 +28,51 @@ const AuthState = props => {
   // This is where the ACTIONS are added
 
   // Load User
+const loadUser = async () => {
+  // @todo -load token into gloabal header
+  if(localStorage.token){
+    setAuthToken(localStorage.token)
+  }
+  try{
+    const res = await axios.get('http://localhost:4000/api/auth')
+
+    dispatch({ type : USER_LOADED, payload : res.data })
+  }catch(err){
+    dispatch({ type: AUTH_ERROR})
+  }
+}
+
 
   // Register User
+const register = async (formData) => {
+  const config = {
+    headers:{
+      'Content-Type' : 'application/json'
+    }
+  }
 
+  try{
+    const res = await axios.post('http://localhost:4000/api/users', formData, config)
+
+    dispatch({
+      type: REGISTER_SUCCESS,
+      payload: res.data
+    });
+    loadUser()
+
+  }catch(err){
+    dispatch({
+      type: REGISTER_FAIL,
+      payload: err.response.data.msg
+    })
+  }
+}
   // Login User
 
   // Logout
 
   // Clear Errors
+const clearErrors = () => dispatch({ type : CLEAR_ERRORS})
 
 
 
@@ -45,6 +84,9 @@ const AuthState = props => {
       user : state.user,
       token : state.token,
       error : state.error,
+      register,
+      clearErrors,
+      loadUser
     }}>
       { props.children }
     </AuthContext.Provider>
